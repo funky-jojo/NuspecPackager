@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Id="cbb25c94-9a4e-4f0e-b8a9-d5195b554e9b" Version="1.4" Language="en-US" Publisher="Joseph Gabriel" />
+    <DisplayName>Nuspec Packager</DisplayName>
+    <Description xml:space="preserve">Packs Nuspec files from Solution Explorer context menu.</Description>
+    <License>license.txt</License>
+    <GettingStartedGuide>NuspecPackager Usage Guide.docx</GettingStartedGuide>
+    <Icon>nupack.ico</Icon>
+    <Tags>NuGet;nuspec;packager</Tags>
+  </Metadata>
+  <Installation InstalledByMsi="false">
+    <InstallationTarget Version="[11.0,]" Id="Microsoft.VisualStudio.Pro" />
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="4.5" />
+    <Dependency Id="Microsoft.VisualStudio.MPF.11.0" DisplayName="Visual Studio MPF 11.0" d:Source="Installed" Version="11.0" />
+  </Dependencies>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+  </Assets>
+</PackageManifest>

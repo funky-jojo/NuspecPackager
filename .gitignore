@@ -1,3 +1,11 @@
+# Typical Visual Studio ignore
+*.suo
+*.user
+bin
+obj
+packages
+
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
