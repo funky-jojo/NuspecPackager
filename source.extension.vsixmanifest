@@ -4,8 +4,9 @@
     <Identity Id="cbb25c94-9a4e-4f0e-b8a9-d5195b554e9b" Version="1.4" Language="en-US" Publisher="Joseph Gabriel" />
     <DisplayName>Nuspec Packager</DisplayName>
     <Description xml:space="preserve">Packs Nuspec files from Solution Explorer context menu.</Description>
+    <MoreInfo>https://github.com/landofjoe/NuspecPackager</MoreInfo>
     <License>license.txt</License>
-    <GettingStartedGuide>NuspecPackager Usage Guide.docx</GettingStartedGuide>
+    <GettingStartedGuide>readme.md</GettingStartedGuide>
     <Icon>nupack.ico</Icon>
     <Tags>NuGet;nuspec;packager</Tags>
   </Metadata>
