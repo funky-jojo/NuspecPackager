@@ -71,5 +71,20 @@ namespace LandOfJoe.NuspecPackager
 
             return pane != null;
         }
+
+        public static void Clear()
+        {
+            try
+            {
+                if (EnsurePane())
+                {
+                    pane.Clear();
+                }
+            }
+            catch
+            {
+                // Do nothing
+            }
+        }
     }
 }

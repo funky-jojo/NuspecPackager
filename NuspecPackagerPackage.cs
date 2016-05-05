@@ -142,6 +142,7 @@ namespace LandOfJoe.NuspecPackager
         #region package nuspec files
         private void PackageNuspecFiles(List<NuspecItemInfo> nuspecItems, string additionalOptions = "")
         {
+            Logger.Clear();
             WriteOutput("Nuspec Packager starting...", true);
             var hasErrors = false;
             try
