@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.IO;
-using Microsoft.VisualStudio.Services.Integration;
 
 namespace LandOfJoe.NuspecPackager
 {
@@ -67,6 +66,9 @@ namespace LandOfJoe.NuspecPackager
             try
             {
                 base.Initialize();
+
+                // save instance
+                Instance = this;
 
                 // Add our command handlers for menu (commands must exist in the .vsct file)
                 OleMenuCommandService mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
@@ -141,9 +143,9 @@ namespace LandOfJoe.NuspecPackager
         private void PackageNuspecFiles(List<NuspecItemInfo> nuspecItems, string additionalOptions = "")
         {
             WriteOutput("Nuspec Packager starting...", true);
+            var hasErrors = false;
             try
             {
-
                 foreach (var item in nuspecItems)
                 {
                     WriteOutput("Processing nuspec file: " + item.FileName);
@@ -152,6 +154,7 @@ namespace LandOfJoe.NuspecPackager
                     NuspecItemConfig itemConfig = GetItemConfig(item);
                     if (!ValidateOptions(item, itemConfig))
                     {
+                        hasErrors = true;
                         WriteOutput("Skipping nuspec file: " + item.Name);
                         continue;
                     }
@@ -160,23 +163,29 @@ namespace LandOfJoe.NuspecPackager
                     var buildSuccess = BuildProject(item);
                     if (!buildSuccess)
                     {
+                        hasErrors = true;
                         WriteOutput("Skipping nuspec file: " + item.Name);
                         continue;
                     }
 
 
-                    //process the nuspec file
-                    Pack(additionalOptions, item, itemConfig);
+                    //process the nuspec file and keep track if any errors occur
+                    hasErrors = !Pack(additionalOptions, item, itemConfig) || hasErrors;
                 }
-
-                WriteOutput("Nuspec Packager finished", true);
             }
+
             catch (Exception ex)
             {
                 var message = string.Format(CultureInfo.CurrentCulture, "Exception during NuspecPackagerFiles() of {0}: {1}", this.ToString(), ex.Message);
                 WriteOutput(message);
                 MessageBoxHelper.ShowMessageBox(message, OLEMSGICON.OLEMSGICON_CRITICAL);
+                hasErrors = true;
             }
+
+            //display final result
+            var msg = "Nuspec Packager finished " + (hasErrors ? "with errors." : "successfully.");
+            WriteOutput(msg, showInStatus: true);
+
         }
         #endregion
 
@@ -244,7 +253,7 @@ namespace LandOfJoe.NuspecPackager
         {
             if (!File.Exists(itemConfig.NuGetExe))
             {
-                WriteOutput("NuspecPackager configuration error: The path to NuGet.exe is not valid.  Path: " + itemConfig.NuGetExe);
+                WriteOutput("NuspecPackager configuration error: The path to NuGet.exe is not valid: " + itemConfig.NuGetExe);
                 return false;
             }
 
@@ -272,7 +281,7 @@ namespace LandOfJoe.NuspecPackager
             }
             return true;
         }
-#endregion
+        #endregion
 
 
         private NuspecItemConfig GetItemConfig(NuspecItemInfo item)
@@ -282,13 +291,35 @@ namespace LandOfJoe.NuspecPackager
             //get the config options from VS Options Dialog
             var defaultConfig = new NuspecItemConfig
             {
-                NuGetExe = optionPage.CustomNuGetExePath,
+                NuGetExe = optionPage.NuGetExeDir,
                 OutputPath = optionPage.DefaultOutputPath
             };
-            if (optionPage.UseDefaultNuGetExePath)
+
+            if (!String.IsNullOrEmpty(optionPage.NuGetExeDir))
             {
-                defaultConfig.NuGetExe = Path.Combine(Path.GetDirectoryName(dte.Solution.FullName), ".nuget\\NuGet.exe");
+                //use global config as default nuget exe dir
+                defaultConfig.NuGetExe = Path.Combine(optionPage.NuGetExeDir, "NuGet.exe");
             }
+            else
+            {
+                //default path is at same level as item
+                defaultConfig.NuGetExe = Path.Combine(item.Directory, "NuGet.exe");
+
+                //if exe not there, then let default path be at .nuget folder at solution level
+                if (!File.Exists(defaultConfig.NuGetExe))
+                {
+                    WriteOutput("Could not find nuget.exe at: " + defaultConfig.NuGetExe);
+
+                    defaultConfig.NuGetExe = Path.Combine(Path.GetDirectoryName(dte.Solution.FullName), ".nuget\\NuGet.exe");
+
+                    if (!File.Exists(defaultConfig.NuGetExe))
+                    {
+                        WriteOutput("Could not find nuget.exe at: " + defaultConfig.NuGetExe);
+                        WriteOutput("Create a NuspecPackager.config file or set the NugetExeDir property in the Visual Studio options page to specify a directory where nuget.exe is located.");
+                    }
+                }
+            }
+
 
             //get config otions from folder's default config file
             var folderConfig = Util.GetDirectoryConfig(item);
@@ -308,7 +339,7 @@ namespace LandOfJoe.NuspecPackager
         /// package the nuspec file
         /// </summary>
         /// <returns>true, if successful</returns>
-        private void Pack(string additionalOptions, NuspecItemInfo item, NuspecItemConfig itemConfig)
+        private bool Pack(string additionalOptions, NuspecItemInfo item, NuspecItemConfig itemConfig)
         {
             WriteOutput("Packing nuspec file: " + item.FileName);
 
@@ -331,11 +362,13 @@ namespace LandOfJoe.NuspecPackager
             if (process.ExitCode == 0)
             {
                 WriteOutput("Successfully packed nuspec file: " + item.FileName);
+                return true;
             }
             else
             {
                 var error = process.StandardError.ReadToEnd();
                 WriteOutput("Error packing nuspec file: " + item.FileName + Environment.NewLine + "ERROR: " + error);
+                return false;
             }
         }
 
@@ -343,13 +376,37 @@ namespace LandOfJoe.NuspecPackager
 
         private void WriteOutput(string message, bool showInStatus = false)
         {
-            OutputWindowHelper.OutputString(this, message + Environment.NewLine);
-            OutputWindowHelper.ActivateOutputWindow(this);
+            // write using alternative method
+            WriteToGeneralOutputWindow(message);
             if (showInStatus)
             {
                 ShowStatus(message);
             }
         }
+
+        /// <summary>
+        /// Write to VS output pane - 
+        /// </summary>
+        /// <remarks>
+        /// </remarks>
+        /// <param name="message"></param>
+        private void WriteToGeneralOutputWindow(string message)
+        {
+            try
+            {
+                Logger.Log(message);
+            }
+            catch (Exception e)
+            {
+                EventLog.WriteEntry("NuSpecPackager", message);
+                EventLog.WriteEntry("NuSpecPackager", e.Message + Environment.NewLine + e.StackTrace);
+            }
+        }
+
+        /// <summary>
+        /// Return single instance of NuspecPackager
+        /// </summary>
+        public static NuspecPackagerPackage Instance { get; private set; }
 
         private void ShowStatus(string message)
         {

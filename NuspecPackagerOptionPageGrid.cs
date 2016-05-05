@@ -36,25 +36,14 @@ namespace LandOfJoe.NuspecPackager
             set { _defaultOutputPath = value; }
         }
 
-        private string _customNuGetExe = "";
+        private string _nuGetExeDir= "";
         [Category("Nuspec Packager")]
-        [DisplayName("Custom NuGet.exe Path")]
-        [Description("Specifies a custom NuGet.exe path.\n\nIf the Use default NuGet.exe path option is checked, this custom path will be ignored.")]
-        public string CustomNuGetExePath
+        [DisplayName("NuGet.exe Directory")]
+        [Description("Specifies the full directory where NuGet.exe is located.  If not specified, the packager will look for it first in the .nuspec directory, and then in the .nuget folder at the solution level.")]
+        public string NuGetExeDir
         {
-            get { return _customNuGetExe; }
-            set { _customNuGetExe = value; }
-        }
-
-
-        private bool _useDefaultNugetPath = true;
-        [Category("Nuspec Packager")]
-        [DisplayName("Use default NuGet.exe path")]
-        [Description("If checked, we'll look for NuGet.exe in the solution's .nuget folder.  This should be installed when NuGet Package Restore is enabled for the solution.")]
-        public bool UseDefaultNuGetExePath
-        {
-            get { return _useDefaultNugetPath; }
-            set { _useDefaultNugetPath = value; }
+            get { return _nuGetExeDir; }
+            set { _nuGetExeDir = value; }
         }
 
         protected override void OnApply(PageApplyEventArgs e)
@@ -83,9 +72,9 @@ namespace LandOfJoe.NuspecPackager
                 return false;
             }
 
-            if (!this.UseDefaultNuGetExePath && !String.IsNullOrWhiteSpace(this.CustomNuGetExePath) && !Directory.Exists(this.CustomNuGetExePath))
+            if (!String.IsNullOrWhiteSpace(this.NuGetExeDir) && !Directory.Exists(this.NuGetExeDir))
             {
-                MessageBoxHelper.ShowMessageBox("Custom NuGet.exe Path must either be empty or specify an existing directory.  This setting can be changed in the Visual Studio Options dialog.", OLEMSGICON.OLEMSGICON_CRITICAL);
+                MessageBoxHelper.ShowMessageBox("NuGet.exe Path must either be empty or specify an existing directory.  This setting can be changed in the Visual Studio Options dialog.", OLEMSGICON.OLEMSGICON_CRITICAL);
                 return false;
             }
 

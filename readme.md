@@ -1,8 +1,8 @@
-#Nuspec Packager - Version 1.4
+#Nuspec Packager - Version 1.5
 
 ##Overview
 
-The Nuspec Packager is a very simple VSIX extension designed for Visual Studio 2012 and up. It is designed specifically to provide to the ability to “pack” .nuspec files that are located in your Visual Studio solution by adding a menu item to the Context Menu in the Solution Explorer. This menu item is only visible for .nuspec files.
+The Nuspec Packager is a very simple VSIX extension designed for Visual Studio. It is designed specifically to provide to the ability to “pack” .nuspec files that are located in your Visual Studio solution by adding a menu item to the Context Menu in the Solution Explorer. This menu item is only visible for .nuspec files.
 
 Note: This extension uses NuGet.exe command line utility to process the .nuspec file. This utility may be obtained as a separate download, or it is added to your solution’s .nuget folder when NuGet Package Restore is enabled for the solution.
 
@@ -15,8 +15,7 @@ Default settings for the Nuspec Packager are specified in the Visual Studio Opti
 | Setting Name                            | Description   |
 |-----------------------------------------|---------------|
 | **Default Output Path**                    | Specifies the output folder where the nuspec file will be built. This can be an absolute or relative .  If a relative path is used, it will be resolved relative to the .nuspec file that is being packaged. |
-| **Custom NuGet.exe Path**                   | Specifies a custom NuGet.exe path.  If the Use default NuGet.exe path option is checked, this custom path will be ignored. |
-| **Use default NuGet.exe path** (true/false) | If checked, we'll look for NuGet.exe in the solution's .nuget folder. This should be installed when NuGet Package Restore is enabled for the solution. |
+| **NuGet.exe Directory**                   | Specifies the full directory where NuGet.exe is located.  If not specified, the packager will look for it first in the .nuspec directory, and then in the .nuget folder at the solution level.|
 
 ##Nuspec Packager Config File
 

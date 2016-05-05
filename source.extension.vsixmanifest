@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Id="cbb25c94-9a4e-4f0e-b8a9-d5195b554e9b" Version="1.4" Language="en-US" Publisher="Joseph Gabriel" />
+    <Identity Id="cbb25c94-9a4e-4f0e-b8a9-d5195b554e9b" Version="1.5" Language="en-US" Publisher="Joseph Gabriel" />
     <DisplayName>Nuspec Packager</DisplayName>
     <Description xml:space="preserve">Visual Studio extension that provides ability to pack .nuspec files directly from the Solution Explorer contest menu.</Description>
     <MoreInfo>https://github.com/landofjoe/NuspecPackager</MoreInfo>
