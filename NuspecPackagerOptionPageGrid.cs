@@ -46,6 +46,16 @@ namespace LandOfJoe.NuspecPackager
             set { _nuGetExeDir = value; }
         }
 
+        private bool _buildFromProject = false;
+        [Category("Nuspec Packager")]
+        [DisplayName("Build from project")]
+        [Description("If True, we will build the nuspec from project..")]
+        public string NuGetExeDir
+        {
+            get { return _nuGetExeDir; }
+            set { _nuGetExeDir = value; }
+        }
+
         protected override void OnApply(PageApplyEventArgs e)
         {
             if (ValidateOptions())

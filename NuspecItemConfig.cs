@@ -6,10 +6,20 @@ using System.Threading.Tasks;
 
 namespace LandOfJoe.NuspecPackager
 {
+
     public class NuspecItemConfig
     {
+
         public string NuGetExe { get; set; }
+
         public string OutputPath { get; set; }
+
+        public bool PackFromProject { get; set; }
+
+        public NuspecItemConfig()
+        {
+            this.PackFromProject = false;
+        }
 
         /// <summary>
         /// populate this object's empty properties with values from the source object
@@ -31,5 +41,7 @@ namespace LandOfJoe.NuspecPackager
             this.NuGetExe = Util.EnsureAbsolutePath(this.NuGetExe, item.Directory);
             this.OutputPath = Util.EnsureAbsolutePath(this.OutputPath, item.Directory);
         }
+
     }
+
 }

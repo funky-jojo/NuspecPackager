@@ -76,7 +76,13 @@ namespace LandOfJoe.NuspecPackager
                 {
                     // Create the command for the menu item.
                     CommandID menuCommandID = new CommandID(GuidList.guidNuspecPackagerCmdSet, (int)PkgCmdIDList.cmdidMyCommand);
-                    OleMenuCommand menuItem = new OleMenuCommand(MenuItemCallback, menuCommandID);
+                    OleMenuCommand menuItem = new OleMenuCommand(PackageMenuItemCallback, menuCommandID);
+                    menuItem.BeforeQueryStatus += new EventHandler(OnBeforeQueryStatus);
+                    mcs.AddCommand(menuItem);
+
+                    // Create the command for the menu item.
+                    menuCommandID = new CommandID(GuidList.guidNuspecPackagerCmdSet, (int)PkgCmdIDList.cmdidPackageSymbols);
+                    menuItem = new OleMenuCommand(PackageProjectMenuCallback, menuCommandID);
                     menuItem.BeforeQueryStatus += new EventHandler(OnBeforeQueryStatus);
                     mcs.AddCommand(menuItem);
 
@@ -123,12 +129,17 @@ namespace LandOfJoe.NuspecPackager
         /// See the Initialize method to see how the menu item is associated to this function using
         /// the OleMenuCommandService service and the MenuCommand class.
         /// </summary>
-        private void MenuItemCallback(object sender, EventArgs e)
+        private void PackageMenuItemCallback(object sender, EventArgs e)
         {
             var items = GetSelectedItems();
             PackageNuspecFiles(items);
         }
 
+        private void PackageProjectMenuCallback(object sender, EventArgs e)
+        {
+            var items = GetSelectedItems();
+            PackageNuspecFiles(items, "");
+        }
 
         /// <summary>
         /// This function is called when the Package .nuspec (Symbols) menu is calicked
@@ -169,9 +180,21 @@ namespace LandOfJoe.NuspecPackager
                         continue;
                     }
 
-
-                    //process the nuspec file and keep track if any errors occur
-                    hasErrors = !Pack(additionalOptions, item, itemConfig) || hasErrors;
+                    if (itemConfig.PackFromProject)
+                    {
+                        hasErrors = !Pack(additionalOptions, new NuspecItemInfo()
+                        {
+                            FileName = Path.Combine(item.ProjectPath, item.ProjectName), // item.ProjectItem.Properties.Item("FullPath").Value,
+                            ProjectPath = item.ProjectPath,
+                            ProjectUniqueName = item.ProjectUniqueName,
+                            ProjectName = item.ProjectName
+                        }, itemConfig) || hasErrors;
+                    }
+                    else
+                    {
+                        //process the nuspec file and keep track if any errors occur
+                        hasErrors = !Pack(additionalOptions, item, itemConfig) || hasErrors;
+                    }
                 }
             }
 
@@ -345,9 +368,7 @@ namespace LandOfJoe.NuspecPackager
             WriteOutput("Packing nuspec file: " + item.FileName);
 
             var startInfo = new ProcessStartInfo(itemConfig.NuGetExe);
-            startInfo.Arguments = string.Format(
-                "pack \"{0}\" -NoDefaultExcludes -OutputDirectory \"{1}\" {2}",
-                item.FileName, itemConfig.OutputPath, additionalOptions);
+            startInfo.Arguments = $"pack \"{item.FileName}\" -NoDefaultExcludes -OutputDirectory \"{itemConfig.OutputPath}\" {additionalOptions}";
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
             startInfo.CreateNoWindow = true;
