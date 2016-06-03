@@ -316,7 +316,8 @@ namespace LandOfJoe.NuspecPackager
             var defaultConfig = new NuspecItemConfig
             {
                 NuGetExe = optionPage.NuGetExeDir,
-                OutputPath = optionPage.DefaultOutputPath
+                OutputPath = optionPage.DefaultOutputPath,
+                PackFromProject = optionPage.BuildFromProject
             };
 
             if (!String.IsNullOrEmpty(optionPage.NuGetExeDir))

@@ -50,10 +50,10 @@ namespace LandOfJoe.NuspecPackager
         [Category("Nuspec Packager")]
         [DisplayName("Build from project")]
         [Description("If True, we will build the nuspec from project..")]
-        public string NuGetExeDir
+        public bool BuildFromProject
         {
-            get { return _nuGetExeDir; }
-            set { _nuGetExeDir = value; }
+            get { return _buildFromProject; }
+            set { _buildFromProject = value; }
         }
 
         protected override void OnApply(PageApplyEventArgs e)
