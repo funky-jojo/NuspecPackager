@@ -71,6 +71,16 @@
         </Strings>
       </Button>
 
+      <Button guid="guidNuspecPackagerCmdSet" id="cmdidPackageFromProject" priority="0x0102" type="Button">
+        <Parent guid="guidNuspecPackagerCmdSet" id="MyMenuGroup" />
+        <Icon guid="guidCmdIcon" id="bmpCmdIcon" />
+        <CommandFlag>DefaultInvisible</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <Strings>
+          <ButtonText>Package .nuspec from project</ButtonText>
+        </Strings>
+      </Button>
+
       <Button guid="guidNuspecPackagerCmdSet" id="cmdidPackageSymbols" priority="0x0101" type="Button">
         <Parent guid="guidNuspecPackagerCmdSet" id="MyMenuGroup" />
         <Icon guid="guidCmdIcon" id="bmpCmdIcon" />
@@ -112,6 +122,7 @@
 
       <IDSymbol name="MyMenuGroup" value="0x1020" />
       <IDSymbol name="cmdidMyCommand" value="0x0100" />
+      <IDSymbol name="cmdidPackageFromProject" value="0x0102" />
       <IDSymbol name="cmdidPackageSymbols" value="0x0101"/>
     </GuidSymbol>
 

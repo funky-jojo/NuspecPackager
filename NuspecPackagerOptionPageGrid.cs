@@ -49,11 +49,51 @@ namespace LandOfJoe.NuspecPackager
         private bool _buildFromProject = false;
         [Category("Nuspec Packager")]
         [DisplayName("Build from project")]
-        [Description("If True, we will build the nuspec from project..")]
-        public bool BuildFromProject
+        [Description("If True, we will build the nuspec from project.")]
+        public bool PackFromProject
         {
             get { return _buildFromProject; }
             set { _buildFromProject = value; }
+        }
+
+        private bool _uploadToFeed = false;
+        [Category("Nuspec Packager")]
+        [DisplayName("Upload to remote feed")]
+        [Description("If True, the built nuget package will be uploaded to the feed you set.")]
+        public bool UploadToFeed
+        {
+            get { return _uploadToFeed; }
+            set { _uploadToFeed = value; }
+        }
+
+        private string _publishUrl = "";
+        [Category("Nuspec Packager")]
+        [DisplayName("Publish url")]
+        [Description("Set the default remote nuget feed to publish your package.")]
+        public string PublishUrl
+        {
+            get { return _publishUrl; }
+            set { _publishUrl = value; }
+        }
+
+        private string _publishKey = "";
+        [Category("Nuspec Packager")]
+        [DisplayName("Publish key")]
+        [Description("Set the default remote nuget feed publish key.")]
+        public string RemoteFeedApiKey
+        {
+            get { return _publishKey; }
+            set { _publishKey = value; }
+        }
+
+        private bool _appendV2ApiTrait = true;
+        [Category("Nuspec Packager")]
+        [DisplayName("Append api/v2/package to publish url")]
+        [Description("If True, append 'api/v2/package' to publish url.")]
+        public bool AppendV2ApiTrait
+        {
+            get { return _appendV2ApiTrait; }
+            set { _appendV2ApiTrait = value; }
         }
 
         protected override void OnApply(PageApplyEventArgs e)

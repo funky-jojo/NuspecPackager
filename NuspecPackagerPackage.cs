@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace LandOfJoe.NuspecPackager
 {
@@ -40,8 +41,10 @@ namespace LandOfJoe.NuspecPackager
     [Guid(GuidList.guidNuspecPackagerPkgString)]
     [ProvideOptionPage(typeof(NuspecPackagerOptionPageGrid),
          "Nuspec Packager", "General", 0, 0, true)]
-    public sealed class NuspecPackagerPackage : Package
+    public sealed class NuspecPackagerPackage 
+        : Package
     {
+
         /// <summary>
         /// Default constructor of the package.
         /// Inside this method you can place any initialization code that does not require 
@@ -81,7 +84,7 @@ namespace LandOfJoe.NuspecPackager
                     mcs.AddCommand(menuItem);
 
                     // Create the command for the menu item.
-                    menuCommandID = new CommandID(GuidList.guidNuspecPackagerCmdSet, (int)PkgCmdIDList.cmdidPackageSymbols);
+                    menuCommandID = new CommandID(GuidList.guidNuspecPackagerCmdSet, (int)PkgCmdIDList.cmdidPackageFromProject);
                     menuItem = new OleMenuCommand(PackageProjectMenuCallback, menuCommandID);
                     menuItem.BeforeQueryStatus += new EventHandler(OnBeforeQueryStatus);
                     mcs.AddCommand(menuItem);
@@ -138,7 +141,7 @@ namespace LandOfJoe.NuspecPackager
         private void PackageProjectMenuCallback(object sender, EventArgs e)
         {
             var items = GetSelectedItems();
-            PackageNuspecFiles(items, "");
+            PackageNuspecFiles(items, "", true);
         }
 
         /// <summary>
@@ -151,7 +154,7 @@ namespace LandOfJoe.NuspecPackager
         }
 
         #region package nuspec files
-        private void PackageNuspecFiles(List<NuspecItemInfo> nuspecItems, string additionalOptions = "")
+        private void PackageNuspecFiles(List<NuspecItemInfo> nuspecItems, string additionalOptions = "", bool buildFromProject = false)
         {
             Logger.Clear();
             WriteOutput("Nuspec Packager starting...", true);
@@ -180,20 +183,31 @@ namespace LandOfJoe.NuspecPackager
                         continue;
                     }
 
-                    if (itemConfig.PackFromProject)
+                    var outputPkgPath = "";
+                    if (buildFromProject || itemConfig.PackFromProject)
                     {
+                        var actualFileToProcess = item.ProjectPath;
+                        WriteOutput("Handling file: " + actualFileToProcess);
                         hasErrors = !Pack(additionalOptions, new NuspecItemInfo()
                         {
-                            FileName = Path.Combine(item.ProjectPath, item.ProjectName), // item.ProjectItem.Properties.Item("FullPath").Value,
+                            FileName = actualFileToProcess, // item.ProjectItem.Properties.Item("FullPath").Value,
                             ProjectPath = item.ProjectPath,
                             ProjectUniqueName = item.ProjectUniqueName,
                             ProjectName = item.ProjectName
-                        }, itemConfig) || hasErrors;
+                        }, itemConfig, ref outputPkgPath) || hasErrors;
                     }
                     else
                     {
                         //process the nuspec file and keep track if any errors occur
-                        hasErrors = !Pack(additionalOptions, item, itemConfig) || hasErrors;
+                        var actualFileToProcess = item.FileName;
+                        WriteOutput("Handling file: " + actualFileToProcess);
+                        hasErrors = !Pack(additionalOptions, item, itemConfig, ref outputPkgPath) || hasErrors;
+                    }
+
+                    WriteOutput($"Trying to upload {outputPkgPath}...{itemConfig.UploadToFeed}");
+                    if (itemConfig.UploadToFeed && !hasErrors && !string.IsNullOrEmpty(outputPkgPath))
+                    {
+                        hasErrors = !this.PublishPack(additionalOptions, item, outputPkgPath, itemConfig) || hasErrors;
                     }
                 }
             }
@@ -209,7 +223,6 @@ namespace LandOfJoe.NuspecPackager
             //display final result
             var msg = "Nuspec Packager finished " + (hasErrors ? "with errors." : "successfully.");
             WriteOutput(msg, showInStatus: true);
-
         }
         #endregion
 
@@ -307,7 +320,6 @@ namespace LandOfJoe.NuspecPackager
         }
         #endregion
 
-
         private NuspecItemConfig GetItemConfig(NuspecItemInfo item)
         {
             var dte = (DTE2)GetService(typeof(SDTE));
@@ -317,7 +329,11 @@ namespace LandOfJoe.NuspecPackager
             {
                 NuGetExe = optionPage.NuGetExeDir,
                 OutputPath = optionPage.DefaultOutputPath,
-                PackFromProject = optionPage.BuildFromProject
+                PackFromProject = optionPage.PackFromProject,
+                AppendV2ApiTrait = optionPage.AppendV2ApiTrait,
+                RemoteFeedApiKey = optionPage.RemoteFeedApiKey,
+                PublishUrl = optionPage.PublishUrl,
+                UploadToFeed = optionPage.UploadToFeed
             };
 
             if (!String.IsNullOrEmpty(optionPage.NuGetExeDir))
@@ -364,7 +380,7 @@ namespace LandOfJoe.NuspecPackager
         /// package the nuspec file
         /// </summary>
         /// <returns>true, if successful</returns>
-        private bool Pack(string additionalOptions, NuspecItemInfo item, NuspecItemConfig itemConfig)
+        private bool Pack(string additionalOptions, NuspecItemInfo item, NuspecItemConfig itemConfig, ref string outputFile)
         {
             WriteOutput("Packing nuspec file: " + item.FileName);
 
@@ -384,18 +400,55 @@ namespace LandOfJoe.NuspecPackager
 
             if (process.ExitCode == 0)
             {
+                var regx = new Regex(@"(')([^']+)\1");
+                outputFile = regx.Matches(output).Cast<Match>().Select(m => m.Groups[2].Value).Last();
                 WriteOutput("Successfully packed nuspec file: " + item.FileName);
                 return true;
             }
             else
             {
+                outputFile = null;
                 var error = process.StandardError.ReadToEnd();
                 WriteOutput("Error packing nuspec file: " + item.FileName + Environment.NewLine + "ERROR: " + error);
                 return false;
             }
         }
 
+        /// <summary>
+        /// package the nuspec file
+        /// </summary>
+        /// <returns>true, if successful</returns>
+        private bool PublishPack(string additionalOptions, NuspecItemInfo item, string pkgFullPath, NuspecItemConfig itemConfig)
+        {
+            WriteOutput($"Uploading nuspec file: {pkgFullPath}");
 
+            var startInfo = new ProcessStartInfo(itemConfig.NuGetExe);
+            var publishUrlAppend = itemConfig.AppendV2ApiTrait ? "api/v2/package" : "";
+            startInfo.Arguments = $"push {pkgFullPath} {itemConfig.RemoteFeedApiKey} -Source {itemConfig.PublishUrl}{publishUrlAppend} {additionalOptions}";
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+            startInfo.CreateNoWindow = true;
+            startInfo.UseShellExecute = false;
+            startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            var process = System.Diagnostics.Process.Start(startInfo);
+
+            process.WaitForExit();
+
+            var output = process.StandardOutput.ReadToEnd();
+            WriteOutput(output);
+
+            if (process.ExitCode == 0)
+            {
+                WriteOutput("Successfully published nupkg file: " + pkgFullPath);
+                return true;
+            }
+            else
+            {
+                var error = process.StandardError.ReadToEnd();
+                WriteOutput("Error publish nupkg file: " + pkgFullPath + Environment.NewLine + "ERROR: " + error);
+                return false;
+            }
+        }
 
         private void WriteOutput(string message, bool showInStatus = false)
         {
