@@ -15,15 +15,15 @@ namespace LandOfJoe.NuspecPackager
 
         public string OutputPath { get; set; }
 
-        public bool PackFromProject { get; set; }
+        public bool? PackFromProject { get; set; }
 
-        public bool UploadToFeed { get; set; }
+        public bool? UploadToFeed { get; set; }
 
         public string PublishUrl { get; set; }
 
         public string RemoteFeedApiKey { get; set; }
 
-        public bool AppendV2ApiTrait { get; set; }
+        public bool? AppendV2ApiTrait { get; set; }
 
         public NuspecItemConfig()
         {
@@ -49,7 +49,7 @@ namespace LandOfJoe.NuspecPackager
             {
                 var currentValue = pi.GetValue(this);
                 var sourceValue = pi.GetValue(source);
-                if (!string.IsNullOrWhiteSpace(sourceValue as string))
+                if (source != null)
                 {
                     pi.SetValue(this, sourceValue);
                 }

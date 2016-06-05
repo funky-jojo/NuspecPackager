@@ -184,7 +184,7 @@ namespace LandOfJoe.NuspecPackager
                     }
 
                     var outputPkgPath = "";
-                    if (buildFromProject || itemConfig.PackFromProject)
+                    if (buildFromProject || (itemConfig.PackFromProject ?? false))
                     {
                         var actualFileToProcess = item.ProjectPath;
                         WriteOutput("Handling file: " + actualFileToProcess);
@@ -205,7 +205,7 @@ namespace LandOfJoe.NuspecPackager
                     }
 
                     WriteOutput($"Trying to upload {outputPkgPath}...{itemConfig.UploadToFeed}");
-                    if (itemConfig.UploadToFeed && !hasErrors && !string.IsNullOrEmpty(outputPkgPath))
+                    if ((itemConfig.UploadToFeed ?? false) && !hasErrors && !string.IsNullOrEmpty(outputPkgPath))
                     {
                         hasErrors = !this.PublishPack(additionalOptions, item, outputPkgPath, itemConfig) || hasErrors;
                     }
@@ -423,7 +423,7 @@ namespace LandOfJoe.NuspecPackager
             WriteOutput($"Uploading nuspec file: {pkgFullPath}");
 
             var startInfo = new ProcessStartInfo(itemConfig.NuGetExe);
-            var publishUrlAppend = itemConfig.AppendV2ApiTrait ? "api/v2/package" : "";
+            var publishUrlAppend = (itemConfig.AppendV2ApiTrait ?? false) ? "api/v2/package" : "";
             startInfo.Arguments = $"push {pkgFullPath} {itemConfig.RemoteFeedApiKey} -Source {itemConfig.PublishUrl}{publishUrlAppend} {additionalOptions}";
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
