@@ -41,7 +41,7 @@ namespace LandOfJoe.NuspecPackager
     [Guid(GuidList.guidNuspecPackagerPkgString)]
     [ProvideOptionPage(typeof(NuspecPackagerOptionPageGrid),
          "Nuspec Packager", "General", 0, 0, true)]
-    public sealed class NuspecPackagerPackage 
+    public sealed class NuspecPackagerPackage
         : Package
     {
 
@@ -190,6 +190,7 @@ namespace LandOfJoe.NuspecPackager
                         WriteOutput("Handling file: " + actualFileToProcess);
                         hasErrors = !Pack(additionalOptions, new NuspecItemInfo()
                         {
+                            Project = item.Project,
                             FileName = actualFileToProcess, // item.ProjectItem.Properties.Item("FullPath").Value,
                             ProjectPath = item.ProjectPath,
                             ProjectUniqueName = item.ProjectUniqueName,
@@ -255,6 +256,7 @@ namespace LandOfJoe.NuspecPackager
             _overallBuildSuccess = true;
 
             var activeConfigurationName = dte.Solution.SolutionBuild.ActiveConfiguration.Name;
+            //dte.Solution.SolutionBuild.Clean(true);
             dte.Solution.SolutionBuild.BuildProject(activeConfigurationName, item.ProjectUniqueName, true);
 
             dte.Events.BuildEvents.OnBuildProjConfigDone -= BuildEvents_OnBuildProjConfigDone;
@@ -371,6 +373,35 @@ namespace LandOfJoe.NuspecPackager
             //merge properties from folder and default into item config's empty properties
             itemConfig.MergeFrom(folderConfig);
             itemConfig.MergeFrom(defaultConfig);
+
+            // TODO: Resolve envrionment variable here.
+            var regx = new Regex(@"\$\(([^)]*)\)");
+            var envVars = regx.Matches(itemConfig.OutputPath);
+            if (envVars.Count > 0)
+            {
+                WriteOutput($"Environment variable found in the output path. Resolving varables...");
+                var prj = item.Project;
+                if (prj == null)
+                {
+                    WriteOutput($"Failed to find the project {item.ProjectPath}...");
+                }
+                else
+                {
+                    foreach (Match match in envVars)
+                    {
+                        var varName = match.Groups[1].Value;
+                        WriteOutput($"Resolving varable {varName}...");
+                        var varValue = prj.ConfigurationManager.ActiveConfiguration.Properties.Item(varName)?.Value?.ToString();
+                        WriteOutput($"Resolved varable {varName}: {varValue}.");
+                        if (!string.IsNullOrEmpty(varValue))
+                        {
+                            itemConfig.OutputPath = match.Result(varValue);
+                            WriteOutput($"Replaced string: {itemConfig.OutputPath}");
+                        }
+                    }
+                }
+            }
+
             itemConfig.EnsureAbsolutePaths(item);
 
             return itemConfig;
@@ -503,6 +534,7 @@ namespace LandOfJoe.NuspecPackager
                     var itemName = item.Name as string;
                     list.Add(new NuspecItemInfo
                     {
+                        Project = item.ProjectItem.ContainingProject,
                         FileName = item.ProjectItem.Properties.Item("FullPath").Value,
                         ProjectPath = item.ProjectItem.ContainingProject.FullName,
                         ProjectUniqueName = item.ProjectItem.ContainingProject.UniqueName,
